@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - SecureExam</title>
+    <!-- Memuat Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Memuat Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f9fafb; /* gray-50 */
+        }
+        /* Menyembunyikan spinner pada input number */
+        input[type='number']::-webkit-inner-spin-button,
+        input[type='number']::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type='number'] {
+            -moz-appearance: textfield;
+        }
+        
+        /* Style untuk tab aktif */
+        .tab-btn.active {
+            border-color: #1f2937; /* border-gray-800 */
+            background-color: #f3f4f6; /* bg-gray-200 */
+            color: #1f2937; /* text-gray-800 */
+        }
+
+        /* Loading spinner */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #ffffff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="text-gray-900">
+
+    <!-- Login Section -->
+    <section id="adminLoginSection" class="section active min-h-screen flex items-center justify-center p-4 bg-gray-900">
+        <div class="w-full max-w-md bg-white rounded-xl shadow-xl overflow-hidden p-8">
+            <h2 class="text-3xl font-bold text-gray-800 mb-2 text-center">Admin Panel</h2>
+            <p class="text-gray-600 mb-6 text-center">Login untuk mengelola ujian.</p>
+            
+            <div id="loginAlert"></div>
+            
+            <form id="loginForm" class="space-y-5">
+                <div>
+                    <label for="username" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                    <input type="text" id="username" name="username" placeholder="Masukkan username admin" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent">
+                </div>
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Masukkan password admin" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent">
+                </div>
+                <button type="submit" class="w-full bg-gray-900 hover:bg-gray-700 text-white py-3 px-6 rounded-lg font-semibold text-lg transition duration-200 flex items-center justify-center gap-2">
+                    Masuk
+                </button>
+            </form>
+            <div class="mt-6 text-center text-gray-600 text-sm">
+                <p>Demo Admin: admin / admin123</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Admin Dashboard (Hidden by default) -->
+    <section id="adminDashboardSection" class="section hidden">
+        <!-- Header -->
+        <header class="bg-gray-900 text-white shadow-md sticky top-0 z-50">
+            <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+                <div class="text-2xl font-bold">Admin Panel SecureExam</div>
+                <div class="flex items-center gap-3">
+                    <div id="adminName" class="font-semibold">Administrator</div>
+                    <button id="logoutBtn" class="ml-4 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg text-sm font-medium transition duration-200 flex items-center gap-2">
+                        <i class="fas fa-sign-out-alt"></i> Keluar
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto p-4 md:p-8">
+            <!-- Tab Buttons -->
+            <div class="mb-6 flex flex-wrap border-b border-gray-300">
+                <button class="tab-btn active py-3 px-6 text-lg font-semibold text-gray-600 border-b-4 border-transparent hover:text-gray-900" data-tab="tab-users">
+                    <i class="fas fa-users mr-2"></i>Kelola Siswa
+                </button>
+                <button class="tab-btn py-3 px-6 text-lg font-semibold text-gray-600 border-b-4 border-transparent hover:text-gray-900" data-tab="tab-exams">
+                    <i class="fas fa-book mr-2"></i>Kelola Ujian
+                </button>
+                <button class="tab-btn py-3 px-6 text-lg font-semibold text-gray-600 border-b-4 border-transparent hover:text-gray-900" data-tab="tab-results">
+                    <i class="fas fa-poll mr-2"></i>Hasil Ujian
+                </button>
+            </div>
+
+            <!-- Tab Content -->
+            <div id="tab-content">
+                <!-- Tab Kelola Siswa -->
+                <div id="tab-users" class="tab-panel active space-y-8">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <!-- Daftar Siswa -->
+                        <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg">
+                            <h2 class="text-2xl font-bold text-gray-800 mb-4">Daftar Siswa</h2>
+                            <div class="table-container overflow-x-auto">
+                                <table class="w-full">
+                                    <thead class="bg-gray-100">
+                                        <tr>
+                                            <th class="p-4 text-left text-sm font-semibold text-gray-600 uppercase">Nama Lengkap</th>
+                                            <th class="p-4 text-left text-sm font-semibold text-gray-600 uppercase">Username</th>
+                                            <th class="p-4 text-left text-sm font-semibold text-gray-600 uppercase">Kelas</th>
+                                            <th class="p-4 text-left text-sm font-semibold text-gray-600 uppercase">Status</th>
+                                            <th class="p-4 text-left text-sm font-semibold text-gray-600 uppercase">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="usersTableBody" class="divide-y divide-gray-200">
+                                        <!-- User rows populated by JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Form Tambah Siswa -->
+                        <div class="bg-white p-6 rounded-xl shadow-lg h-fit">
+                            <h2 class="text-2xl font-bold text-gray-800 mb-4">Tambah Siswa Baru</h2>
+                            <div id="userFormAlert"></div>
+                            <form id="addUserForm" class="space-y-4">
+                                <input type="hidden" id="userId" value="">
+                                <div>
+                                    <label for="fullName" class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
+                                    <input type="text" id="fullName" placeholder="Nama Siswa" required
+                                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800">
+                                </div>
+                                <div>
+                                    <label for="newUsername" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                                    <input type="text" id="newUsername" placeholder="Username (unik)" required
+                                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800">
+                                </div>
+                                <div>
+                                    <label for="newPassword" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                                    <input type="password" id="newPassword" placeholder="Min. 6 karakter" required
+                                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800">
+                                </div>
+                                <div>
+                                    <label for="classId" class="block text-sm font-medium text-gray-700 mb-1">Kelas</label>
+                                    <input type="text" id="classId" placeholder="Contoh: 10A" required
+                                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800">
+                                </div>
+                                <button type="submit" class="w-full bg-gray-900 hover:bg-gray-700 text-white py-3 px-6 rounded-lg font-semibold transition duration-200">
+                                    Simpan Siswa
+                                </button>
+                                <button type="button" id="cancelEditUserBtn" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-6 rounded-lg font-semibold transition duration-200 hidden">
+                                    Batal Edit
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Kelola Ujian -->
+                <div id="tab-exams" class="tab-panel hidden space-y-8">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <!-- Daftar Ujian -->
+                        <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg">
+                            <h2 class="text-2xl font-bold text-gray-800 mb-4">Daftar Ujian (Mata Pelajaran)</h2>
+                            <div class="table-container overflow-x-auto">
+                                <table class="w-full">
+                                    <thead class="bg-gray-100">
+                                        <tr>
+                                            <th class="p-4 text-left text-sm font-semibold text-gray-600 uppercase">Nama Ujian</th>
+                                            <th class="p-4 text-left text-sm font-semibold text-gray-600 uppercase">Mapel</th>
+                                            <th class="p-4 text-left text-sm font-semibold text-gray-600 uppercase">Jml Soal</th>
+                                            <th class="p-4 text-left text-sm font-semibold text-gray-600 uppercase">Kelas Aktif</th>
+                                            <th class="p-4 text-left text-sm font-semibold text-gray-600 uppercase">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="examsTableBody" class="divide-y divide-gray-200">
+                                        <!-- Exam rows populated by JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Form Tambah Ujian -->
+                        <div class="bg-white p-6 rounded-xl shadow-lg h-fit">
+                            <h2 class="text-2xl font-bold text-gray-800 mb-4">Tambah Ujian Baru</h2>
+                            <div id="examFormAlert"></div>
+                            <form id="addExamForm" class="space-y-4">
+                                <input type="hidden" id="examId" value="">
+                                <div>
+                                    <label for="examName" class="block text-sm font-medium text-gray-700 mb-1">Nama Ujian</label>
+                                    <input type="text" id="examName" placeholder="Contoh: UAS Matematika Ganjil" required
+                                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800">
+                                </div>
+                                <div>
+                                    <label for="examSubject" class="block text-sm font-medium text-gray-700 mb-1">Mata Pelajaran</label>
+                                    <input type="text" id="examSubject" placeholder="Contoh: Matematika" required
+                                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800">
+                                </div>
+                                <div>
+                                    <label for="examDuration" class="block text-sm font-medium text-gray-700 mb-1">Durasi (menit)</label>
+                                    <input type="number" id="examDuration" placeholder="Contoh: 60" required
+                                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800">
+                                </div>
+                                <button type="submit" class="w-full bg-gray-900 hover:bg-gray-700 text-white py-3 px-6 rounded-lg font-semibold transition duration-200">
+                                    Simpan Ujian
+                                </button>
+                                <button type="button" id="cancelEditExamBtn" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-6 rounded-lg font-semibold transition duration-200 hidden">
+                                    Batal Edit
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Hasil Ujian -->
+                <div id="tab-results" class="tab-panel hidden space-y-8">
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-4">Laporan Hasil Ujian</h2>
+                        <div class="flex flex-wrap gap-4 mb-6">
+                            <!-- Filter Kelas -->
+                            <div>
+                                <label for="filterClass" class="block text-sm font-medium text-gray-700 mb-1">Filter per Kelas</label>
+                                <select id="filterClass" class="w-full md:w-auto px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800">
+                                    <option value="all">Semua Kelas</option>
+                                    <!-- Options populated by JS -->
+                                </select>
+                            </div>
+                            <!-- Filter Ujian -->
+                            <div>
+                                <label for="filterExam" class="block text-sm font-medium text-gray-700 mb-1">Filter per Ujian</label>
+                                <select id="filterExam" class="w-full md:w-auto px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800">
+                                    <option value="all">Semua Ujian</option>
+                                    <!-- Options populated by JS -->
+                                </select>
+                            </div>
+                            <!-- Tombol Download -->
+                            <button id="downloadReportBtn" class="self-end bg-green-600 hover:bg-green-700 text-white py-2 px-5 rounded-lg font-semibold transition duration-200 flex items-center gap-2">
+                                <i class="fas fa-download"></i> Download Laporan
+                            </button>
+                        </div>
+                        
+                        <div class="table-container overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th class="p-4 text-left text-sm font-semibold text-gray-600 uppercase">Nama Siswa</th>
+                                        <th class="p-4 text-left text-sm font-semibold text-gray-600 uppercase">Kelas</th>
+                                        <th class="p-4 text-left text-sm font-semibold text-gray-600 uppercase">Nama Ujian</th>
+                                        <th class="p-4 text-left text-sm font-semibold text-gray-600 uppercase">Tanggal</th>
+                                        <th class="p-4 text-left text-sm font-semibold text-gray-600 uppercase">Nilai</th>
+                                        <th class="p-4 text-left text-sm font-semibold text-gray-600 uppercase">Pelanggaran</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="resultsTableBody" class="divide-y divide-gray-200">
+                                    <!-- Result rows populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </section>
+
+    <!-- Modal Manager (Base) -->
+    <div id="modal-backdrop" class="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4 hidden">
+        <div id="modal-content" class="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <!-- Modal Header -->
+            <div class="p-5 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
+                <h3 id="modal-title" class="text-2xl font-bold text-gray-800">Modal Title</h3>
+                <button id="modal-close-btn" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            <!-- Modal Body -->
+            <div id="modal-body" class="p-6">
+                <!-- Konten modal diisi oleh JS -->
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // --- Admin Panel State ---
+        const adminState = {
+            currentUser: null,
+            users: [],
+            exams: [],
+            results: [],
+            editingUserId: null,
+            editingExamId: null,
+            editingQuestionExamId: null
+        };
+
+        // --- DOM Elements ---
+        const adminLoginSection = document.getElementById('adminLoginSection');
+        const adminDashboardSection = document.getElementById('adminDashboardSection');
+        const loginAlert = document.getElementById('loginAlert');
+        const adminName = document.getElementById('adminName');
+        
+        const modalBackdrop = document.getElementById('modal-backdrop');
+        const modalContent = document.getElementById('modal-content');
+        const modalTitle = document.getElementById('modal-title');
+        const modalBody = document.getElementById('modal-body');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+
+        // --- Database (LocalStorage) Functions ---
+        // (Sama seperti di cbt_exam.html, tapi disesuaikan untuk admin)
+        
+        function initializeData() {
+            const savedUsers = localStorage.getItem('examUsers');
+            adminState.users = savedUsers ? JSON.parse(savedUsers) : [];
+            
+            const savedExams = localStorage.getItem('examExams');
+            adminState.exams = savedExams ? JSON.parse(savedExams) : [];
+            
+            const savedResults = localStorage.getItem('examResults');
+            adminState.results = savedResults ? JSON.parse(savedResults) : [];
+            
+            // Inisialisasi data demo jika kosong (untuk konsistensi)
+            if (adminState.users.length === 0) {
+                 adminState.users = [
+                    { id: 1, username: 'admin', password: 'admin123', fullName: 'Administrator', role: 'admin', classId: null },
+                    { id: 2, username: 'siswa1', password: 'password123', fullName: 'Siswa Satu', role: 'siswa', classId: '10A' },
+                    { id: 3, username: 'siswa2', password: 'password123', fullName: 'Siswa Dua', role: 'siswa', classId: '10B' }
+                ];
+                saveUsersToStorage();
+            }
+            if (adminState.exams.length === 0) {
+                adminState.exams = [
+                    {
+                        id: 1, name: 'Ujian Matematika Dasar', subject: 'Matematika', duration: 60, assignedClasses: [],
+                        questions: [{ id: 1, question: '15 + 25?', options: ['30', '35', '40', '45'], correctAnswer: 2, points: 5 }]
+                    },
+                    {
+                        id: 2, name: 'Ujian Bahasa Indonesia', subject: 'Bahasa Indonesia', duration: 45, assignedClasses: [],
+                        questions: [{ id: 1, question: 'Manakah yang bukan kata kerja?', options: ['Berlari', 'Membaca', 'Meja', 'Menulis'], correctAnswer: 2, points: 5 }]
+                    }
+                ];
+                saveExamsToStorage();
+            }
+        }
+
+        function saveUsersToStorage() {
+            localStorage.setItem('examUsers', JSON.stringify(adminState.users));
+        }
+
+        function saveExamsToStorage() {
+            localStorage.setItem('examExams', JSON.stringify(adminState.exams));
+        }
+
+        // --- Utility Functions ---
+        
+        function showAlert(containerId, message, type = 'danger') {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            const colors = {
+                danger: 'bg-red-100 border-red-500 text-red-700',
+                success: 'bg-green-100 border-green-500 text-green-700',
+                warning: 'bg-yellow-100 border-yellow-500 text-yellow-700'
+            };
+            
+            container.innerHTML = `
+                <div class="p-4 border-l-4 ${colors[type]}" role="alert">
+                    <p class="font-bold">${type === 'danger' ? 'Error' : (type === 'success' ? 'Sukses' : 'Peringatan')}</p>
+                    <p>${message}</p>
+                </div>
+            `;
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
+        }
+        
+        // --- Modal Manager ---
+        function openModal(title, content) {
+            modalTitle.textContent = title;
+            modalBody.innerHTML = content;
+            modalBackdrop.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            modalBackdrop.classList.add('hidden');
+            modalTitle.textContent = '';
+            modalBody.innerHTML = '';
+        }
+        modalCloseBtn.addEventListener('click', closeModal);
+
+        // --- Admin Authentication ---
+        
+        document.getElementById('loginForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            initializeData(); // Pastikan data terbaru
+            
+            const user = adminState.users.find(u => 
+                u.username === username && 
+                u.password === password &&
+                u.role === 'admin'
+            );
+            
+            if (user) {
+                adminState.currentUser = user;
+                adminName.textContent = user.fullName;
+                adminLoginSection.classList.add('hidden');
+                adminDashboardSection.classList.remove('hidden');
+                loadAllTabs();
+            } else {
+                showAlert('loginAlert', 'Username atau password admin salah.', 'danger');
+            }
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            adminState.currentUser = null;
+            adminLoginSection.classList.remove('hidden');
+            adminDashboardSection.classList.add('hidden');
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+        });
+
+        // --- Tab Navigation ---
+        
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const tabId = e.currentTarget.getAttribute('data-tab');
+                
+                // Update button active state
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                e.currentTarget.classList.add('active');
+                
+                // Show corresponding panel
+                document.querySelectorAll('.tab-panel').forEach(panel => {
+                    panel.classList.add('hidden');
+                    panel.classList.remove('active');
+                });
+                document.getElementById(tabId).classList.remove('hidden');
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+        
+        function loadAllTabs() {
+            initializeData();
+            loadUsersTab();
+            loadExamsTab();
+            loadResultsTab();
+        }
+
+        // --- Tab 1: Kelola Siswa ---
+        
+        function loadUsersTab() {
+            const tableBody = document.getElementById('usersTableBody');
+            tableBody.innerHTML = '';
+            const students = adminState.users.filter(u => u.role === 'siswa');
+            
+            if (students.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500">Belum ada data siswa.</td></tr>`;
+                return;
+            }
+
+            students.forEach(user => {
+                const isBanned = localStorage.getItem('bannedUser_' + user.id) === 'true';
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="p-4">${user.fullName}</td>
+                    <td class="p-4">${user.username}</td>
+                    <td class="p-4">${user.classId}</td>
+                    <td class="p-4">
+                        ${isBanned ? 
+                            `<span class="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Diblokir</span>` :
+                            `<span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Aktif</span>`
+                        }
+                    </td>
+                    <td class="p-4 space-x-2">
+                        ${isBanned ? 
+                            `<button class="unban-btn text-sm bg-yellow-500 hover:bg-yellow-600 text-white py-1 px-3 rounded-lg" data-id="${user.id}">Buka Blokir</button>` : ''
+                        }
+                        <button class="edit-user-btn text-sm bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded-lg" data-id="${user.id}"><i class="fas fa-edit"></i></button>
+                        <button class="delete-user-btn text-sm bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded-lg" data-id="${user.id}"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            // Add event listeners
+            document.querySelectorAll('.unban-btn').forEach(btn => btn.addEventListener('click', unbanUser));
+            document.querySelectorAll('.edit-user-btn').forEach(btn => btn.addEventListener('click', editUser));
+            document.querySelectorAll('.delete-user-btn').forEach(btn => btn.addEventListener('click', deleteUser));
+        }
+
+        document.getElementById('addUserForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const fullName = document.getElementById('fullName').value;
+            const username = document.getElementById('newUsername').value;
+            const password = document.getElementById('newPassword').value;
+            const classId = document.getElementById('classId').value.toUpperCase();
+            
+            if (adminState.editingUserId) {
+                // Update user
+                const user = adminState.users.find(u => u.id === adminState.editingUserId);
+                if (user) {
+                    // Cek username unik (kecuali username lama)
+                    if (adminState.users.some(u => u.username === username && u.id !== adminState.editingUserId)) {
+                        showAlert('userFormAlert', 'Username sudah digunakan oleh siswa lain.', 'danger');
+                        return;
+                    }
+                    user.fullName = fullName;
+                    user.username = username;
+                    if (password) user.password = password; // Hanya update password jika diisi
+                    user.classId = classId;
+                }
+                adminState.editingUserId = null;
+                showAlert('userFormAlert', 'Data siswa berhasil diperbarui.', 'success');
+            } else {
+                // Tambah user baru
+                if (adminState.users.some(u => u.username === username)) {
+                    showAlert('userFormAlert', 'Username sudah digunakan.', 'danger');
+                    return;
+                }
+                const newId = adminState.users.length > 0 ? Math.max(...adminState.users.map(u => u.id)) + 1 : 1;
+                const newUser = { id: newId, fullName, username, password, classId, role: 'siswa' };
+                adminState.users.push(newUser);
+                showAlert('userFormAlert', 'Siswa baru berhasil ditambahkan.', 'success');
+            }
+            
+            saveUsersToStorage();
+            loadUsersTab();
+            resetUserForm();
+        });
+
+        document.getElementById('cancelEditUserBtn').addEventListener('click', resetUserForm);
+
+        function resetUserForm() {
+            document.getElementById('addUserForm').reset();
+            document.getElementById('newUsername').disabled = false;
+            document.getElementById('newPassword').required = true;
+            document.getElementById('newPassword').placeholder = "Min. 6 karakter";
+            adminState.editingUserId = null;
+            document.getElementById('cancelEditUserBtn').classList.add('hidden');
+        }
+
+        function editUser(e) {
+            const userId = parseInt(e.currentTarget.getAttribute('data-id'));
+            const user = adminState.users.find(u => u.id === userId);
+            if (user) {
+                adminState.editingUserId = userId;
+                document.getElementById('userId').value = user.id;
+                document.getElementById('fullName').value = user.fullName;
+                document.getElementById('newUsername').value = user.username;
+                document.getElementById('newUsername').disabled = true; // Username tidak bisa diubah
+                document.getElementById('classId').value = user.classId;
+                document.getElementById('newPassword').value = '';
+                document.getElementById('newPassword').placeholder = "Kosongkan jika tidak ingin diubah";
+                document.getElementById('newPassword').required = false;
+                document.getElementById('cancelEditUserBtn').classList.remove('hidden');
+                window.scrollTo(0, 0); // Scroll ke atas
+            }
+        }
+
+        function deleteUser(e) {
+            const userId = parseInt(e.currentTarget.getAttribute('data-id'));
+            if (confirm('Apakah Anda yakin ingin menghapus siswa ini? Semua hasil ujiannya juga akan terhapus.')) {
+                adminState.users = adminState.users.filter(u => u.id !== userId);
+                // Hapus juga hasil ujian siswa tsb
+                adminState.results = adminState.results.filter(r => r.userId !== userId);
+                
+                saveUsersToStorage();
+                localStorage.setItem('examResults', JSON.stringify(adminState.results)); // Simpan hasil
+                loadUsersTab();
+                loadResultsTab(); // Refresh tab hasil
+            }
+        }
+        
+        function unbanUser(e) {
+            const userId = parseInt(e.currentTarget.getAttribute('data-id'));
+            if (confirm('Apakah Anda yakin ingin membuka blokir siswa ini?')) {
+                localStorage.removeItem('bannedUser_' + userId);
+                loadUsersTab();
+            }
+        }
+        
+        // --- Tab 2: Kelola Ujian ---
+        
+        function loadExamsTab() {
+            const tableBody = document.getElementById('examsTableBody');
+            tableBody.innerHTML = '';
+            
+            if (adminState.exams.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500">Belum ada data ujian.</td></tr>`;
+                return;
+            }
+
+            adminState.exams.forEach(exam => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="p-4">${exam.name}</td>
+                    <td class="p-4">${exam.subject}</td>
+                    <td class="p-4">${exam.questions.length}</td>
+                    <td class="p-4">${exam.assignedClasses.length > 0 ? exam.assignedClasses.join(', ') : '-'}</td>
+                    <td class="p-4 space-x-2 whitespace-nowrap">
+                        <button class="assign-exam-btn text-sm bg-teal-600 hover:bg-teal-700 text-white py-1 px-3 rounded-lg" data-id="${exam.id}" title="Aktifkan Ujian"><i class="fas fa-share-square"></i></button>
+                        <button class="edit-questions-btn text-sm bg-green-600 hover:bg-green-700 text-white py-1 px-3 rounded-lg" data-id="${exam.id}" title="Edit Soal"><i class="fas fa-list-ol"></i></button>
+                        <button class="edit-exam-btn text-sm bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded-lg" data-id="${exam.id}" title="Edit Ujian"><i class="fas fa-edit"></i></button>
+                        <button class="delete-exam-btn text-sm bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded-lg" data-id="${exam.id}" title="Hapus Ujian"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            // Add event listeners
+            document.querySelectorAll('.assign-exam-btn').forEach(btn => btn.addEventListener('click', assignExam));
+            document.querySelectorAll('.edit-questions-btn').forEach(btn => btn.addEventListener('click', openQuestionManager));
+            document.querySelectorAll('.edit-exam-btn').forEach(btn => btn.addEventListener('click', editExam));
+            document.querySelectorAll('.delete-exam-btn').forEach(btn => btn.addEventListener('click', deleteExam));
+        }
+        
+        document.getElementById('addExamForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('examName').value;
+            const subject = document.getElementById('examSubject').value;
+            const duration = parseInt(document.getElementById('examDuration').value);
+            
+            if (adminState.editingExamId) {
+                // Update
+                const exam = adminState.exams.find(ex => ex.id === adminState.editingExamId);
+                if (exam) {
+                    exam.name = name;
+                    exam.subject = subject;
+                    exam.duration = duration;
+                }
+                adminState.editingExamId = null;
+                showAlert('examFormAlert', 'Data ujian berhasil diperbarui.', 'success');
+            } else {
+                // Add new
+                const newId = adminState.exams.length > 0 ? Math.max(...adminState.exams.map(ex => ex.id)) + 1 : 1;
+                const newExam = { id: newId, name, subject, duration, assignedClasses: [], questions: [] };
+                adminState.exams.push(newExam);
+                showAlert('examFormAlert', 'Ujian baru berhasil ditambahkan.', 'success');
+            }
+            
+            saveExamsToStorage();
+            loadExamsTab();
+            resetExamForm();
+        });
+
+        document.getElementById('cancelEditExamBtn').addEventListener('click', resetExamForm);
+
+        function resetExamForm() {
+            document.getElementById('addExamForm').reset();
+            adminState.editingExamId = null;
+            document.getElementById('cancelEditExamBtn').classList.add('hidden');
+        }
+        
+        function editExam(e) {
+            const examId = parseInt(e.currentTarget.getAttribute('data-id'));
+            const exam = adminState.exams.find(ex => ex.id === examId);
+            if (exam) {
+                adminState.editingExamId = examId;
+                document.getElementById('examId').value = exam.id;
+                document.getElementById('examName').value = exam.name;
+                document.getElementById('examSubject').value = exam.subject;
+                document.getElementById('examDuration').value = exam.duration;
+                document.getElementById('cancelEditExamBtn').classList.remove('hidden');
+                window.scrollTo(0, 0); // Scroll ke atas
+            }
+        }
+
+        function deleteExam(e) {
+            const examId = parseInt(e.currentTarget.getAttribute('data-id'));
+            if (confirm('Apakah Anda yakin ingin menghapus ujian ini? Semua soal DAN hasil ujian terkait akan terhapus.')) {
+                adminState.exams = adminState.exams.filter(ex => ex.id !== examId);
+                adminState.results = adminState.results.filter(r => r.examId !== examId);
+                
+                saveExamsToStorage();
+                localStorage.setItem('examResults', JSON.stringify(adminState.results));
+                loadExamsTab();
+                loadResultsTab();
+            }
+        }
+        
+        function assignExam(e) {
+            const examId = parseInt(e.currentTarget.getAttribute('data-id'));
+            const exam = adminState.exams.find(ex => ex.id === examId);
+            if (!exam) return;
+            
+            const allClasses = [...new Set(adminState.users.filter(u => u.role === 'siswa').map(u => u.classId))].filter(Boolean);
+            let classCheckboxes = '';
+            if (allClasses.length > 0) {
+                classCheckboxes = allClasses.map(classId => `
+                    <div class="flex items-center">
+                        <input type="checkbox" id="class_${classId}" value="${classId}" class="h-4 w-4 text-gray-800"
+                               ${exam.assignedClasses.includes(classId) ? 'checked' : ''}>
+                        <label for="class_${classId}" class="ml-2 block text-sm text-gray-900">${classId}</label>
+                    </div>
+                `).join('');
+            } else {
+                classCheckboxes = '<p class="text-gray-500">Belum ada kelas (buat siswa terlebih dahulu).</p>';
+            }
+            
+            const content = `
+                <p class="mb-4">Pilih kelas mana yang dapat mengerjakan ujian: <strong>${exam.name}</strong></p>
+                <div id="assignClassAlert"></div>
+                <div class="space-y-2 mb-6">${classCheckboxes}</div>
+                <button id="saveAssignBtn" class="w-full bg-gray-900 hover:bg-gray-700 text-white py-2 px-5 rounded-lg font-semibold">Simpan Pengaturan</button>
+            `;
+            openModal('Aktifkan Ujian untuk Kelas', content);
+            
+            document.getElementById('saveAssignBtn').addEventListener('click', () => {
+                const selectedClasses = [];
+                allClasses.forEach(classId => {
+                    if (document.getElementById(`class_${classId}`).checked) {
+                        selectedClasses.push(classId);
+                    }
+                });
+                exam.assignedClasses = selectedClasses;
+                saveExamsToStorage();
+                loadExamsTab();
+                showAlert('assignClassAlert', 'Pengaturan kelas berhasil disimpan.', 'success');
+                setTimeout(closeModal, 1500);
+            });
+        }
+        
+        // --- Modal: Kelola Soal ---
+        
+        function openQuestionManager(e) {
+            const examId = parseInt(e.currentTarget.getAttribute('data-id'));
+            adminState.editingQuestionExamId = examId;
+            const exam = adminState.exams.find(ex => ex.id === examId);
+            if (!exam) return;
+            
+            const content = `
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Daftar Soal -->
+                    <div class="lg:col-span-2">
+                        <h3 class="text-xl font-bold mb-4">Daftar Soal (${exam.questions.length})</h3>
+                        <div id="questionList" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+                            ${renderQuestionList(exam)}
+                        </div>
+                    </div>
+                    <!-- Form Tambah Soal -->
+                    <div class="bg-gray-100 p-6 rounded-lg h-fit sticky top-0">
+                        <h3 class="text-xl font-bold mb-4" id="questionFormTitle">Tambah Soal Baru</h3>
+                        <div id="questionFormAlert"></div>
+                        <form id="addQuestionForm" class="space-y-3">
+                            <input type="hidden" id="questionId" value="">
+                            <div>
+                                <label for="questionText" class="block text-sm font-medium text-gray-700 mb-1">Teks Pertanyaan</label>
+                                <textarea id="questionText" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg" required></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Opsi Jawaban</label>
+                                <div class="space-y-2">
+                                    <input type="text" id="option0" placeholder="Opsi A" class="w-full px-4 py-2 border border-gray-300 rounded-lg" required>
+                                    <input type="text" id="option1" placeholder="Opsi B" class="w-full px-4 py-2 border border-gray-300 rounded-lg" required>
+                                    <input type="text" id="option2" placeholder="Opsi C" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                    <input type="text" id="option3" placeholder="Opsi D" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Kunci Jawaban</label>
+                                <select id="correctAnswer" class="w-full px-4 py-2 border border-gray-300 rounded-lg" required>
+                                    <option value="">Pilih Kunci Jawaban</option>
+                                    <option value="0">Opsi A</option>
+                                    <option value="1">Opsi B</option>
+                                    <option value="2">Opsi C</option>
+                                    <option value="3">Opsi D</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="questionPoints" class="block text-sm font-medium text-gray-700 mb-1">Poin</label>
+                                <input type="number" id="questionPoints" value="5" class="w-full px-4 py-2 border border-gray-300 rounded-lg" required>
+                            </div>
+                            <button type="submit" class="w-full bg-gray-900 hover:bg-gray-700 text-white py-2 px-5 rounded-lg font-semibold">Simpan Soal</button>
+                            <button type="button" id="cancelEditQuestionBtn" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-5 rounded-lg font-semibold hidden">Batal Edit</button>
+                        </form>
+                    </div>
+                </div>
+            `;
+            openModal(`Kelola Soal: ${exam.name}`, content);
+            
+            // Add event listeners untuk form dan list
+            document.getElementById('addQuestionForm').addEventListener('submit', saveQuestion);
+            document.getElementById('cancelEditQuestionBtn').addEventListener('click', resetQuestionForm);
+            document.querySelectorAll('.edit-question-btn').forEach(btn => btn.addEventListener('click', editQuestion));
+            document.querySelectorAll('.delete-question-btn').forEach(btn => btn.addEventListener('click', deleteQuestion));
+        }
+        
+        function renderQuestionList(exam) {
+            if (exam.questions.length === 0) {
+                return '<p class="text-gray-500">Belum ada soal untuk ujian ini.</p>';
+            }
+            return exam.questions.map((q, index) => `
+                <div class="border border-gray-200 p-4 rounded-lg">
+                    <div class="flex justify-between items-center mb-2">
+                        <strong class="text-gray-800">Pertanyaan ${index + 1}</strong>
+                        <div class="space-x-2">
+                            <button class="edit-question-btn text-blue-600 hover:text-blue-800" data-id="${q.id}" title="Edit"><i class="fas fa-edit"></i></button>
+                            <button class="delete-question-btn text-red-600 hover:text-red-800" data-id="${q.id}" title="Hapus"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <p class="text-gray-700 mb-2">${q.question}</p>
+                    <div class="text-sm space-y-1">
+                        ${q.options.map((opt, i) => `<p class="${i === q.correctAnswer ? 'font-bold text-green-600' : 'text-gray-600'}">${String.fromCharCode(65 + i)}. ${opt}</p>`).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function saveQuestion(e) {
+            e.preventDefault();
+            const exam = adminState.exams.find(ex => ex.id === adminState.editingQuestionExamId);
+            if (!exam) return;
+            
+            const questionId = parseInt(document.getElementById('questionId').value);
+            const questionData = {
+                question: document.getElementById('questionText').value,
+                options: [
+                    document.getElementById('option0').value,
+                    document.getElementById('option1').value,
+                    document.getElementById('option2').value,
+                    document.getElementById('option3').value
+                ].filter(Boolean), // Hanya simpan opsi yg diisi
+                correctAnswer: parseInt(document.getElementById('correctAnswer').value),
+                points: parseInt(document.getElementById('questionPoints').value)
+            };
+
+            // Validasi
+            if (questionData.options.length < 2) {
+                 showAlert('questionFormAlert', 'Minimal harus ada 2 opsi jawaban (A dan B).', 'danger');
+                 return;
+            }
+            if (questionData.correctAnswer >= questionData.options.length) {
+                showAlert('questionFormAlert', 'Kunci jawaban tidak valid untuk jumlah opsi yang diisi.', 'danger');
+                 return;
+            }
+
+            if (questionId) {
+                // Update
+                const qIndex = exam.questions.findIndex(q => q.id === questionId);
+                if (qIndex > -1) {
+                    exam.questions[qIndex] = { ...exam.questions[qIndex], ...questionData };
+                }
+            } else {
+                // Add new
+                const newId = exam.questions.length > 0 ? Math.max(...exam.questions.map(q => q.id)) + 1 : 1;
+                exam.questions.push({ id: newId, ...questionData });
+            }
+            
+            saveExamsToStorage();
+            document.getElementById('questionList').innerHTML = renderQuestionList(exam);
+            // Re-attach listeners
+            document.querySelectorAll('.edit-question-btn').forEach(btn => btn.addEventListener('click', editQuestion));
+            document.querySelectorAll('.delete-question-btn').forEach(btn => btn.addEventListener('click', deleteQuestion));
+            resetQuestionForm();
+            loadExamsTab(); // Refresh jumlah soal di tabel utama
+        }
+        
+        function resetQuestionForm() {
+            document.getElementById('addQuestionForm').reset();
+            document.getElementById('questionId').value = '';
+            document.getElementById('questionFormTitle').textContent = 'Tambah Soal Baru';
+            document.getElementById('cancelEditQuestionBtn').classList.add('hidden');
+        }
+        
+        function editQuestion(e) {
+            const questionId = parseInt(e.currentTarget.getAttribute('data-id'));
+            const exam = adminState.exams.find(ex => ex.id === adminState.editingQuestionExamId);
+            const question = exam.questions.find(q => q.id === questionId);
+            
+            if (question) {
+                document.getElementById('questionId').value = question.id;
+                document.getElementById('questionText').value = question.question;
+                question.options.forEach((opt, i) => {
+                    document.getElementById(`option${i}`).value = opt;
+                });
+                // Kosongkan sisa opsi jika ada
+                for (let i = question.options.length; i < 4; i++) {
+                     document.getElementById(`option${i}`).value = '';
+                }
+                document.getElementById('correctAnswer').value = question.correctAnswer;
+                document.getElementById('questionPoints').value = question.points;
+                document.getElementById('questionFormTitle').textContent = 'Edit Soal';
+                document.getElementById('cancelEditQuestionBtn').classList.remove('hidden');
+            }
+        }
+        
+        function deleteQuestion(e) {
+            const questionId = parseInt(e.currentTarget.getAttribute('data-id'));
+            if (confirm('Apakah Anda yakin ingin menghapus soal ini?')) {
+                const exam = adminState.exams.find(ex => ex.id === adminState.editingQuestionExamId);
+                exam.questions = exam.questions.filter(q => q.id !== questionId);
+                saveExamsToStorage();
+                document.getElementById('questionList').innerHTML = renderQuestionList(exam);
+                // Re-attach listeners
+                document.querySelectorAll('.edit-question-btn').forEach(btn => btn.addEventListener('click', editQuestion));
+                document.querySelectorAll('.delete-question-btn').forEach(btn => btn.addEventListener('click', deleteQuestion));
+                loadExamsTab(); // Refresh jumlah soal
+            }
+        }
+        
+        // --- Tab 3: Hasil Ujian ---
+        
+        function loadResultsTab() {
+            const classFilter = document.getElementById('filterClass');
+            const examFilter = document.getElementById('filterExam');
+            
+            // Populate filters
+            const allClassIds = [...new Set(adminState.users.filter(u => u.role === 'siswa').map(u => u.classId))].filter(Boolean);
+            const allExamIds = [...new Set(adminState.results.map(r => r.examId))];
+            
+            classFilter.innerHTML = '<option value="all">Semua Kelas</option>';
+            allClassIds.forEach(classId => {
+                classFilter.innerHTML += `<option value="${classId}">${classId}</option>`;
+            });
+            
+            examFilter.innerHTML = '<option value="all">Semua Ujian</option>';
+            allExamIds.forEach(examId => {
+                const exam = adminState.exams.find(ex => ex.id === examId);
+                examFilter.innerHTML += `<option value="${examId}">${exam ? exam.name : 'ID: ' + examId}</option>`;
+            });
+
+            // Add filter event listeners
+            classFilter.addEventListener('change', renderResultsTable);
+            examFilter.addEventListener('change', renderResultsTable);
+            
+            renderResultsTable();
+        }
+        
+        function renderResultsTable() {
+            const tableBody = document.getElementById('resultsTableBody');
+            tableBody.innerHTML = '';
+            
+            const selectedClass = document.getElementById('filterClass').value;
+            const selectedExam = document.getElementById('filterExam').value;
+            
+            let filteredResults = adminState.results;
+            
+            // Filter by exam
+            if (selectedExam !== 'all') {
+                filteredResults = filteredResults.filter(r => r.examId === parseInt(selectedExam));
+            }
+            
+            // Filter by class
+            if (selectedClass !== 'all') {
+                const userIdsInClass = adminState.users.filter(u => u.classId === selectedClass).map(u => u.id);
+                filteredResults = filteredResults.filter(r => userIdsInClass.includes(r.userId));
+            }
+            
+            if (filteredResults.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">Tidak ada data hasil ujian.</td></tr>`;
+                return;
+            }
+
+            filteredResults.forEach(result => {
+                const user = adminState.users.find(u => u.id === result.userId);
+                const exam = adminState.exams.find(ex => ex.id === result.examId);
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="p-4">${user ? user.fullName : 'Siswa Dihapus'}</td>
+                    <td class="p-4">${user ? user.classId : '-'}</td>
+                    <td class="p-4">${exam ? exam.name : 'Ujian Dihapus'}</td>
+                    <td class="p-4">${new Date(result.date).toLocaleString('id-ID')}</td>
+                    <td class="p-4 font-bold text-lg">${result.score}%</td>
+                    <td class="p-4">${result.violations || 0}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+        
+        // --- Download Laporan ---
+        
+        document.getElementById('downloadReportBtn').addEventListener('click', () => {
+            const selectedClass = document.getElementById('filterClass').value;
+            const selectedExam = document.getElementById('filterExam').value;
+            
+            let filteredResults = adminState.results;
+            if (selectedExam !== 'all') {
+                filteredResults = filteredResults.filter(r => r.examId === parseInt(selectedExam));
+            }
+            if (selectedClass !== 'all') {
+                const userIdsInClass = adminState.users.filter(u => u.classId === selectedClass).map(u => u.id);
+                filteredResults = filteredResults.filter(r => userIdsInClass.includes(r.userId));
+            }
+
+            if (filteredResults.length === 0) {
+                alert('Tidak ada data untuk diunduh.');
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Nama Siswa,Kelas,Nama Ujian,Tanggal,Nilai,Pelanggaran\n"; // Header
+
+            filteredResults.forEach(result => {
+                const user = adminState.users.find(u => u.id === result.userId);
+                const exam = adminState.exams.find(ex => ex.id === result.examId);
+                
+                const row = [
+                    user ? user.fullName : 'Siswa Dihapus',
+                    user ? user.classId : '-',
+                    exam ? exam.name : 'Ujian Dihapus',
+                    new Date(result.date).toLocaleString('id-ID'),
+                    result.score,
+                    result.violations || 0
+                ].join(",");
+                csvContent += row + "\n";
+            });
+            
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `laporan_nilai_${selectedClass}_${selectedExam}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+    </script>
+</body>
+</html>
