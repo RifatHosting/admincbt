@@ -1,490 +1,678 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" class="antialiased">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Podcast Editorial Suite</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Examo Onyx Pro v2</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;1,600&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <!-- Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { 
+                        sans: ['"Inter"', 'sans-serif'],
+                        serif: ['"Playfair Display"', 'serif'],
+                    },
+                    colors: {
+                        onyx: '#0f0f0f',
+                        paper: '#ffffff',
+                        subtle: '#f4f4f5',
+                        border: '#e4e4e7'
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out forwards',
+                        'slide-in': 'slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                    },
+                    keyframes: {
+                        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+                        slideIn: { '0%': { transform: 'translateX(100%)' }, '100%': { transform: 'translateX(0)' } }
+                    }
+                }
+            }
+        }
+    </script>
+
     <style>
-        /* --- 1. THE FOUNDATION (High-End Variables) --- */
-        :root {
-            --bg-canvas: #FFFFFF;
-            --bg-panel: #F9F9F9; /* Very subtle contrast */
-            --ink: #000000;
-            --paper: #FFFFFF;
-            --line: rgba(0, 0, 0, 0.08); /* The "Expensive" border */
-            --line-active: rgba(0, 0, 0, 1);
-            
-            --font-display: -apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', Arial, sans-serif;
-            --font-body: 'Georgia', serif; /* Serif for reading elegance in preview */
-            
-            --ease-luxury: cubic-bezier(0.19, 1, 0.22, 1); /* "Apple-like" smooth */
-            --container-w: 1200px;
+        /* --- PROFESSIONAL RESET --- */
+        body { 
+            background-color: #f8f9fa; 
+            color: #0f0f0f; 
+            overflow: hidden; 
+            user-select: none;
+            -webkit-user-select: none;
         }
 
-        * { box-sizing: border-box; outline: none; }
-        
-        body {
-            margin: 0;
-            background-color: var(--bg-canvas);
-            color: var(--ink);
-            font-family: var(--font-display);
-            -webkit-font-smoothing: antialiased;
-            overflow-x: hidden;
-        }
+        /* Allow input select */
+        input, textarea { user-select: text !important; -webkit-user-select: text !important; outline: none; }
 
-        /* --- 2. TYPOGRAPHY (Editorial Scale) --- */
-        h1, h2, h3 { margin: 0; font-weight: 500; letter-spacing: -0.04em; }
-        
-        .display-xl { font-size: 4.5rem; line-height: 0.95; }
-        .display-lg { font-size: 2.5rem; line-height: 1.1; }
-        .label-caps {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
+        /* Custom Scrollbar for Grid */
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #e4e4e7; border-radius: 4px; }
+        .custom-scroll:hover::-webkit-scrollbar-thumb { background: #a1a1aa; }
+
+        /* View Management */
+        .view-section { display: none; opacity: 0; position: absolute; inset: 0; z-index: 10; background: #fff; transition: opacity 0.4s ease; }
+        .view-section.active { display: flex; opacity: 1; }
+
+        /* Grid Number Styles */
+        .grid-btn {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
             font-weight: 600;
-            color: rgba(0,0,0,0.5);
-            margin-bottom: 12px;
-            display: block;
-        }
-
-        /* --- 3. LAYOUT STRUCTURE (Split Screen Architecture) --- */
-        .app-shell {
+            height: 40px;
+            width: 100%;
+            border-radius: 8px;
             display: flex;
-            flex-direction: column;
-            height: 100vh;
-        }
-
-        /* Navbar: Minimalist Strip */
-        .navbar {
-            height: 60px;
-            border-bottom: 1px solid var(--line);
-            display: flex;
-            justify-content: space-between;
             align-items: center;
-            padding: 0 32px;
-            background: rgba(255,255,255,0.9);
-            backdrop-filter: blur(10px);
-            position: sticky;
-            top: 0;
-            z-index: 50;
+            justify-content: center;
+            transition: all 0.2s;
+            border: 1px solid #e4e4e7;
         }
+        /* States */
+        .grid-btn.active { border: 2px solid #000; background: #fff; color: #000; transform: scale(1.05); }
+        .grid-btn.answered { background: #0f0f0f; color: #fff; border-color: #0f0f0f; }
+        .grid-btn.empty { background: #fff; color: #71717a; }
+        .grid-btn:hover:not(.active) { background: #f4f4f5; }
 
-        .brand { font-weight: 700; letter-spacing: -0.05em; font-size: 1.2rem; }
-
-        /* Tab Switcher: Segmented Control */
-        .tab-switcher {
-            display: flex;
-            background: #F2F2F2;
-            padding: 4px;
-            border-radius: 6px;
-        }
-
-        .tab-btn {
-            background: transparent;
-            border: none;
-            padding: 6px 20px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            cursor: pointer;
-            border-radius: 4px;
-            color: rgba(0,0,0,0.5);
-            transition: all 0.4s var(--ease-luxury);
-        }
-
-        .tab-btn.active {
-            background: #FFF;
-            color: #000;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-
-        /* --- 4. VIEWS --- */
-        .view-layer {
-            display: none;
-            flex: 1;
-            opacity: 0;
-            transform: translateY(10px);
-            transition: opacity 0.6s var(--ease-luxury), transform 0.6s var(--ease-luxury);
-        }
-
-        .view-layer.active {
-            display: block;
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        /* --- HOME: THE EDITOR DASHBOARD --- */
-        .editor-grid {
-            display: grid;
-            grid-template-columns: 40% 60%; /* Asymmetrical Grid */
-            height: calc(100vh - 60px);
-        }
-
-        /* Left Panel: Controls */
-        .panel-controls {
-            border-right: 1px solid var(--line);
-            padding: 48px;
-            background: var(--bg-canvas);
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 48px;
-        }
-
-        /* Inputs: Invisible & Massive */
-        .input-naked {
-            width: 100%;
-            border: none;
-            border-bottom: 1px solid var(--line);
-            font-family: var(--font-display);
-            padding: 12px 0;
-            background: transparent;
-            transition: border-color 0.3s;
-            border-radius: 0;
-        }
-        
-        .input-naked:focus { border-bottom-color: var(--ink); }
-        
-        .input-huge { font-size: 2rem; font-weight: 500; letter-spacing: -0.03em; }
-        .input-medium { font-size: 1.5rem; color: rgba(0,0,0,0.6); }
-        
-        .text-area-pro {
-            width: 100%;
-            border: 1px solid var(--line);
-            background: #FAFAFA;
-            padding: 20px;
-            font-family: var(--font-display);
-            font-size: 1rem;
-            min-height: 120px;
-            resize: none;
-            transition: all 0.3s;
-        }
-        
-        .text-area-pro:focus {
-            background: #FFF;
-            border-color: #000;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-        }
-
-        /* Action Button: The Monolith */
-        .btn-monolith {
-            background: var(--ink);
-            color: #FFF;
-            border: none;
-            width: 100%;
-            padding: 20px;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s, opacity 0.2s;
-            margin-top: 16px;
-        }
-
-        .btn-monolith:hover { opacity: 0.9; transform: scale(0.995); }
-
-        /* Right Panel: Live List */
-        .panel-list {
-            background: #FAFAFA;
-            padding: 48px;
-            overflow-y: auto;
-        }
-
-        .qa-strip {
-            background: #FFF;
-            padding: 32px;
-            margin-bottom: 1px; /* Hairline gap feel */
-            border-bottom: 1px solid var(--line);
-            display: grid;
-            grid-template-columns: auto 1fr;
-            gap: 24px;
-            transition: all 0.3s ease;
-        }
-
-        .qa-strip:hover {
-            transform: translateX(10px);
-            box-shadow: -10px 0 20px rgba(0,0,0,0.03);
-        }
-
-        .strip-number {
-            font-family: 'Courier New', monospace;
-            font-size: 0.8rem;
-            color: #CCC;
-            padding-top: 4px;
-        }
-
-        .strip-q { font-weight: 600; font-size: 1.1rem; margin-bottom: 8px; }
-        .strip-a { color: #555; line-height: 1.6; }
-        
-        .strip-actions {
-            margin-top: 16px;
-            text-align: right;
-        }
-        
-        .btn-text {
-            background: none; border: none; 
-            font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em;
-            cursor: pointer; color: #999; padding: 0;
-        }
-        .btn-text:hover { color: #FF0000; }
-
-
-        /* --- PREVIEW: THE MAGAZINE SPREAD --- */
-        #preview-view {
-            background: #FFFFFF;
-            min-height: 100vh;
-            padding: 80px 0;
-        }
-
-        .magazine-layout {
-            max-width: 720px;
-            margin: 0 auto;
-            padding: 0 24px;
-        }
-
-        .hero-header {
-            text-align: center;
-            margin-bottom: 100px;
-            border-bottom: 1px solid var(--ink);
-            padding-bottom: 40px;
-        }
-
-        .hero-podcast {
-            font-size: 3.5rem;
-            font-weight: 400; /* Thin is elegant */
-            letter-spacing: -0.05em;
-            margin-bottom: 16px;
-        }
-
-        .hero-episode {
-            font-family: 'Courier New', monospace;
-            text-transform: uppercase;
-            letter-spacing: 0.2em;
-            font-size: 0.85rem;
-        }
-
-        .conversation-block {
-            margin-bottom: 60px;
-            opacity: 0;
-            transform: translateY(40px);
-            animation: revealUp 0.8s var(--ease-luxury) forwards;
-        }
-
-        .q-block {
-            font-size: 1.5rem;
-            font-weight: 600;
-            letter-spacing: -0.03em;
-            margin-bottom: 16px;
-            line-height: 1.2;
-        }
-
-        .a-block {
-            font-family: var(--font-body); /* Serif contrast */
-            font-size: 1.15rem;
-            color: #444;
-            line-height: 1.8;
-            padding-left: 24px;
-            border-left: 2px solid #000;
-        }
-
-        @keyframes revealUp {
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* --- MOBILE RESPONSIVE --- */
-        @media (max-width: 900px) {
-            .editor-grid { grid-template-columns: 1fr; height: auto; }
-            .panel-controls { padding: 32px 24px; border-right: none; border-bottom: 1px solid var(--line); }
-            .panel-list { padding: 24px; }
-            .display-xl { font-size: 3rem; }
+        /* Noise Texture */
+        .noise {
+            position: fixed; inset: 0; pointer-events: none; z-index: 5; opacity: 0.02;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
         }
     </style>
 </head>
 <body>
 
-    <div class="app-shell">
-        <!-- 1. Navbar: Precise & Floating -->
-        <nav class="navbar">
-            <div class="brand">PODCAST.OS</div>
-            <div class="tab-switcher">
-                <button class="tab-btn active" onclick="app.switch('home')">Studio</button>
-                <button class="tab-btn" onclick="app.switch('preview')">Live View</button>
+    <div class="noise"></div>
+
+    <!-- SECURITY OVERLAY (Pop up jika curang) -->
+    <div id="violation-overlay" class="fixed inset-0 bg-white/95 backdrop-blur-md z-[100] hidden flex-col items-center justify-center text-center p-8">
+        <div class="max-w-md w-full border border-gray-200 bg-white p-10 shadow-2xl rounded-2xl animate-fade-in">
+            <div class="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
+                <i class="ph ph-warning-octagon"></i>
             </div>
-        </nav>
-
-        <!-- 2. Editor View (Split Panel) -->
-        <div id="home-view" class="view-layer active">
-            <div class="editor-grid">
-                
-                <!-- LEFT: Input Controls -->
-                <section class="panel-controls">
-                    <div>
-                        <span class="label-caps">01 — Configuration</span>
-                        <input type="text" id="in-podcast" class="input-naked input-huge" placeholder="Nama Podcast" oninput="app.sync()">
-                        <input type="text" id="in-episode" class="input-naked input-medium" placeholder="Judul Episode / Topik" style="margin-top: 16px;" oninput="app.sync()">
-                    </div>
-
-                    <div>
-                        <span class="label-caps">02 — Dialogue Engine</span>
-                        <div style="margin-bottom: 24px;">
-                            <label style="font-size: 0.9rem; font-weight: 600; margin-bottom: 8px; display: block;">Pertanyaan (Host/User)</label>
-                            <textarea id="in-q" class="text-area-pro" placeholder="Ketik pertanyaan di sini..."></textarea>
-                        </div>
-                        <div>
-                            <label style="font-size: 0.9rem; font-weight: 600; margin-bottom: 8px; display: block;">Jawaban (Guest/Bot)</label>
-                            <textarea id="in-a" class="text-area-pro" placeholder="Ketik jawaban naratif di sini..."></textarea>
-                        </div>
-                        <button class="btn-monolith" onclick="app.add()">Publish to Feed</button>
-                    </div>
-                </section>
-
-                <!-- RIGHT: List Overview -->
-                <section class="panel-list" id="qa-list-container">
-                    <!-- Content injected via JS -->
-                    <div style="text-align: center; padding-top: 100px; opacity: 0.3;">
-                        <p style="font-family: 'Courier New';">NO DATA IN STREAM</p>
-                    </div>
-                </section>
+            <h1 class="font-serif text-3xl font-bold mb-2">Pelanggaran Terdeteksi</h1>
+            <p class="text-gray-500 text-sm mb-6" id="violation-text">Aktivitas mencurigakan tercatat.</p>
+            
+            <div class="flex justify-center gap-2 mb-8">
+                <div id="strike-1" class="h-2 w-12 rounded bg-gray-100"></div>
+                <div id="strike-2" class="h-2 w-12 rounded bg-gray-100"></div>
+                <div id="strike-3" class="h-2 w-12 rounded bg-gray-100"></div>
             </div>
+
+            <button onclick="Security.resume()" id="btn-resume" class="w-full py-3 bg-black text-white text-xs font-bold uppercase tracking-widest rounded-lg hover:bg-gray-800">
+                Kembali ke Ujian
+            </button>
         </div>
+    </div>
 
-        <!-- 3. Preview View (Editorial Magazine) -->
-        <div id="preview-view" class="view-layer">
-            <div class="magazine-layout">
-                <header class="hero-header">
-                    <div class="hero-episode" id="prev-episode">EPISODE TITLE</div>
-                    <h1 class="hero-podcast" id="prev-podcast">Podcast Name</h1>
-                </header>
+    <!-- VIEW 1: LOGIN -->
+    <div id="view-login" class="view-section active flex-col items-center justify-center p-6 bg-white">
+        <div class="w-full max-w-md space-y-10 animate-fade-in">
+            <div class="text-center">
+                <h1 class="font-serif text-5xl font-bold tracking-tight mb-2">Examo Onyx.</h1>
+                <p class="text-gray-400 text-xs uppercase tracking-[0.3em]">Professional CBT Platform</p>
+            </div>
 
-                <div id="preview-content">
-                    <!-- JS Injection -->
+            <form onsubmit="handleLogin(event)" class="space-y-6">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Identitas Peserta</label>
+                    <input type="text" id="inp-name" required placeholder="Nama Lengkap" 
+                        class="w-full border-b border-gray-200 py-3 font-serif text-xl focus:border-black transition-colors bg-transparent placeholder-gray-300">
                 </div>
+                <div>
+                    <input type="text" id="inp-class" required placeholder="Kode Kelas / ID" 
+                        class="w-full border-b border-gray-200 py-3 font-serif text-xl focus:border-black transition-colors bg-transparent uppercase placeholder-gray-300">
+                </div>
+                <button type="submit" class="w-full py-4 bg-black text-white text-xs font-bold uppercase tracking-widest rounded-lg hover:bg-gray-800 transition-all flex items-center justify-center gap-2 mt-8">
+                    Masuk Sistem <i class="ph ph-arrow-right"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- VIEW 2: PREPARATION & CAMERA -->
+    <div id="view-prep" class="view-section flex-col bg-subtle">
+        <header class="bg-white h-16 flex items-center justify-between px-6 border-b border-border">
+            <span class="font-bold font-serif text-lg">Konfigurasi.</span>
+            <button onclick="resetPrep()" class="text-xs text-gray-400 hover:text-red-500">RESET</button>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-6 flex items-center justify-center">
+            <div class="max-w-2xl w-full grid md:grid-cols-2 gap-8 bg-white p-8 rounded-2xl shadow-sm border border-border">
                 
-                <div style="text-align: center; margin-top: 100px; border-top: 1px solid #eee; padding-top: 20px;">
-                    <span class="label-caps">End of Broadcast</span>
+                <!-- Left: File Upload -->
+                <div class="space-y-6">
+                    <div>
+                        <h2 class="font-serif text-2xl font-bold mb-2">1. Sumber Soal</h2>
+                        <p class="text-xs text-gray-500 leading-relaxed">Unggah berkas .JSON terenkripsi atau paste kode konfigurasi.</p>
+                    </div>
+
+                    <div id="upload-area">
+                        <label class="block w-full aspect-[4/3] border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-black hover:bg-gray-50 transition-all group">
+                            <input type="file" id="inp-file" accept=".json" class="hidden" onchange="handleFile(this)">
+                            <i class="ph ph-upload-simple text-3xl text-gray-300 group-hover:text-black mb-2 transition-colors"></i>
+                            <span class="text-xs font-bold uppercase text-gray-400 group-hover:text-black transition-colors">Pilih Berkas</span>
+                        </label>
+                        <button onclick="toggleManual()" class="text-[10px] text-gray-400 underline mt-2 w-full text-center hover:text-black">Input Manual</button>
+                        
+                        <div id="manual-input" class="hidden mt-2">
+                            <textarea id="txt-manual" class="w-full p-2 border text-xs font-mono bg-gray-50 rounded" rows="3" placeholder="Paste JSON code here..."></textarea>
+                            <button onclick="handleManual()" class="w-full bg-gray-200 text-[10px] py-2 mt-1 rounded font-bold hover:bg-gray-300">LOAD</button>
+                        </div>
+                    </div>
+
+                    <div id="file-info" class="hidden p-4 bg-green-50 border border-green-100 rounded-xl flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-green-200 flex items-center justify-center text-green-700"><i class="ph ph-check"></i></div>
+                        <div>
+                            <div class="text-xs font-bold text-green-800 uppercase tracking-wide">Data Termuat</div>
+                            <div id="lbl-filename" class="text-[10px] text-green-600 truncate max-w-[150px]">file.json</div>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- Right: Camera & Token -->
+                <div class="space-y-6 border-t md:border-t-0 md:border-l border-border md:pl-8 pt-6 md:pt-0 relative">
+                    <!-- Overlay for disabled state -->
+                    <div id="lock-overlay" class="absolute inset-0 bg-white/80 z-10 flex items-center justify-center text-center backdrop-blur-[1px]">
+                        <span class="text-xs font-bold text-gray-400 uppercase tracking-widest"><i class="ph ph-lock-key"></i> Unggah Soal Dulu</span>
+                    </div>
+
+                    <div>
+                        <h2 class="font-serif text-2xl font-bold mb-2">2. Keamanan</h2>
+                        <p class="text-xs text-gray-500">Izin kamera wajib untuk pengawasan.</p>
+                    </div>
+
+                    <div class="w-full aspect-video bg-black rounded-lg overflow-hidden relative shadow-lg">
+                        <video id="cam-preview" autoplay muted playsinline class="w-full h-full object-cover opacity-50"></video>
+                        <div class="absolute inset-0 flex items-center justify-center" id="cam-btn-area">
+                            <button onclick="reqCamera()" class="px-4 py-2 bg-white text-black text-xs font-bold uppercase rounded hover:bg-gray-200 transition-colors">
+                                Aktifkan Kamera
+                            </button>
+                        </div>
+                        <div id="rec-dot" class="hidden absolute top-3 right-3 w-3 h-3 bg-red-500 rounded-full animate-pulse border border-white"></div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <input type="text" id="inp-token" placeholder="TOKEN UJIAN" disabled
+                            class="w-full border-b border-gray-200 py-2 font-serif text-2xl text-center uppercase tracking-[0.2em] focus:border-black bg-transparent disabled:opacity-50">
+                        
+                        <button onclick="startExam()" id="btn-start" disabled 
+                            class="w-full py-4 bg-black text-white text-xs font-bold uppercase tracking-widest rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                            Mulai Ujian
+                        </button>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
 
-    <script>
-        const app = {
-            data: {
-                podcast: "The Design Logic",
-                episode: "Ep. 01: Minimalism",
-                items: [
-                    { id: 1, q: "Mengapa desain ini berbeda?", a: "Kami menghilangkan semua gangguan. Tidak ada bayangan lembut, tidak ada warna-warni. Hanya konten, tipografi, dan struktur grid yang jujur." }
-                ]
-            },
+    <!-- VIEW 3: EXAM INTERFACE (Main) -->
+    <div id="view-exam" class="view-section flex-col md:flex-row bg-subtle h-screen w-screen overflow-hidden">
+        
+        <!-- SIDEBAR (Desktop: Fixed Left / Mobile: Hidden Drawer) -->
+        <aside id="sidebar" class="fixed inset-y-0 left-0 w-80 bg-white border-r border-border transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-40 flex flex-col shadow-2xl md:shadow-none">
+            
+            <!-- 1. User Info & Webcam (Integrated) -->
+            <div class="p-6 border-b border-border bg-gray-50">
+                <!-- Webcam Container (Cleanly integrated in Sidebar) -->
+                <div class="w-full aspect-video bg-black rounded-lg overflow-hidden shadow-sm relative mb-4 border border-gray-200">
+                    <video id="sidebar-cam" autoplay muted playsinline class="w-full h-full object-cover transform scale-x-[-1]"></video>
+                    <div class="absolute top-2 left-2 px-2 py-0.5 bg-red-600 text-white text-[9px] font-bold uppercase rounded-sm tracking-wider flex items-center gap-1">
+                        <div class="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div> LIVE
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div id="side-name" class="font-bold text-sm text-black truncate w-40">User Name</div>
+                        <div id="side-class" class="text-xs text-gray-500 uppercase">Class ID</div>
+                    </div>
+                    <div class="text-right">
+                        <i class="ph ph-shield-check text-xl text-green-600"></i>
+                    </div>
+                </div>
+            </div>
 
-            init() {
-                // Set initial values
-                document.getElementById('in-podcast').value = this.data.podcast;
-                document.getElementById('in-episode').value = this.data.episode;
-                this.renderList();
-            },
+            <!-- 2. Question Grid (Daftar Soal) -->
+            <div class="flex-1 overflow-y-auto p-4 custom-scroll">
+                <div class="flex items-center justify-between mb-4">
+                    <span class="text-xs font-bold uppercase text-gray-400 tracking-widest">Daftar Soal</span>
+                    <span id="answered-count" class="text-[10px] bg-black text-white px-2 py-0.5 rounded-full">0/0</span>
+                </div>
+                
+                <div id="question-grid" class="grid grid-cols-5 gap-2">
+                    <!-- Grid generated by JS -->
+                </div>
+            </div>
 
-            sync() {
-                this.data.podcast = document.getElementById('in-podcast').value;
-                this.data.episode = document.getElementById('in-episode').value;
-            },
+            <!-- 3. Timer & Footer -->
+            <div class="p-4 border-t border-border bg-white">
+                <div class="text-center mb-4">
+                    <div class="text-[10px] text-gray-400 uppercase tracking-widest mb-1">Sisa Waktu</div>
+                    <div id="timer-display" class="font-mono text-3xl font-bold tracking-tight text-black">00:00</div>
+                </div>
+                <button onclick="confirmFinish()" class="w-full py-3 bg-red-600 text-white text-xs font-bold uppercase rounded hover:bg-red-700 transition-colors">
+                    Selesai Ujian
+                </button>
+            </div>
 
-            switch(tab) {
-                // Tab UI
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                event.target.classList.add('active');
+            <!-- Close Button (Mobile Only) -->
+            <button onclick="toggleSidebar()" class="md:hidden absolute top-4 right-4 text-gray-400 hover:text-black">
+                <i class="ph ph-x text-2xl"></i>
+            </button>
+        </aside>
 
-                // View Transition
-                const views = document.querySelectorAll('.view-layer');
-                views.forEach(v => {
-                    v.style.opacity = 0;
-                    v.style.transform = 'translateY(10px)';
-                    setTimeout(() => {
-                        v.classList.remove('active');
-                    }, 400);
-                });
+        <!-- MAIN CONTENT -->
+        <main class="flex-1 flex flex-col h-full md:ml-80 relative bg-white md:bg-subtle transition-all">
+            
+            <!-- Mobile Header -->
+            <header class="h-16 bg-white border-b border-border flex items-center justify-between px-4 md:px-8 md:hidden z-30 sticky top-0">
+                <div class="flex items-center gap-3">
+                    <span class="font-serif font-bold text-lg">Examo.</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div id="timer-mobile" class="font-mono text-sm font-bold bg-gray-100 px-2 py-1 rounded">00:00</div>
+                    <button onclick="toggleSidebar()" class="p-2 bg-black text-white rounded text-xl flex items-center justify-center">
+                        <i class="ph ph-squares-four"></i>
+                    </button>
+                </div>
+            </header>
 
-                const target = document.getElementById(tab + '-view');
-                setTimeout(() => {
-                    target.classList.add('active');
-                    // Render preview fresh if switching to it
-                    if(tab === 'preview') this.renderPreview();
+            <!-- Question Area -->
+            <div class="flex-1 overflow-y-auto p-6 md:p-12 pb-32">
+                <div class="max-w-3xl mx-auto w-full bg-white md:shadow-sm md:border md:border-border md:rounded-2xl p-6 md:p-10 min-h-[400px]">
                     
-                    // Trigger reflow
-                    void target.offsetWidth;
-                    target.style.opacity = 1;
-                    target.style.transform = 'translateY(0)';
-                }, 400);
-            },
-
-            add() {
-                const q = document.getElementById('in-q').value;
-                const a = document.getElementById('in-a').value;
-
-                if(!q || !a) return;
-
-                this.data.items.push({ id: Date.now(), q, a });
-                
-                // Reset fields
-                document.getElementById('in-q').value = '';
-                document.getElementById('in-a').value = '';
-                
-                this.renderList();
-            },
-
-            delete(id) {
-                this.data.items = this.data.items.filter(i => i.id !== id);
-                this.renderList();
-            },
-
-            renderList() {
-                const container = document.getElementById('qa-list-container');
-                
-                if(this.data.items.length === 0) {
-                    container.innerHTML = `<div style="text-align: center; padding-top: 100px; opacity: 0.3;"><p style="font-family: 'Courier New';">NO DATA IN STREAM</p></div>`;
-                    return;
-                }
-
-                let html = '';
-                this.data.items.forEach((item, idx) => {
-                    const num = (idx + 1).toString().padStart(2, '0');
-                    html += `
-                    <div class="qa-strip">
-                        <div class="strip-number">${num}</div>
-                        <div>
-                            <div class="strip-q">${item.q}</div>
-                            <div class="strip-a">${item.a}</div>
-                            <div class="strip-actions">
-                                <button class="btn-text" onclick="app.delete(${item.id})">REMOVE</button>
-                            </div>
+                    <!-- Header Soal -->
+                    <div class="flex justify-between items-start mb-8 border-b border-gray-100 pb-4">
+                        <span class="font-serif text-2xl font-bold text-black">Soal No. <span id="q-num">1</span></span>
+                        <div class="flex gap-2">
+                            <button class="text-gray-300 hover:text-yellow-500"><i class="ph ph-flag-banner text-xl"></i></button>
                         </div>
-                    </div>`;
+                    </div>
+
+                    <!-- Soal Text -->
+                    <div id="q-text" class="prose max-w-none font-serif text-xl leading-relaxed text-gray-800 mb-10 select-none">
+                        <!-- Content -->
+                    </div>
+
+                    <!-- Options -->
+                    <div id="q-options" class="space-y-3">
+                        <!-- Options generated -->
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Navigation Footer -->
+            <footer class="absolute bottom-0 inset-x-0 bg-white border-t border-border p-4 md:px-12 md:py-6 flex items-center justify-between md:ml-0 z-20">
+                <button onclick="navQ(-1)" id="btn-prev" class="flex items-center gap-2 px-6 py-3 rounded-lg hover:bg-gray-100 text-xs font-bold uppercase tracking-widest text-gray-600 transition-colors">
+                    <i class="ph ph-arrow-left"></i> Prev
+                </button>
+                
+                <button onclick="navQ(1)" id="btn-next" class="flex items-center gap-2 px-8 py-3 bg-black text-white rounded-lg hover:bg-gray-800 text-xs font-bold uppercase tracking-widest shadow-lg transition-transform active:scale-95">
+                    Next <i class="ph ph-arrow-right"></i>
+                </button>
+            </footer>
+
+            <!-- Overlay for Mobile Sidebar Background -->
+            <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden glass"></div>
+        </main>
+    </div>
+
+    <!-- LOGIC SCRIPT -->
+    <script>
+        const state = {
+            user: { name: '', class: '' },
+            examData: null,
+            answers: {},
+            currentIdx: 0,
+            timeLeft: 0,
+            timerId: null,
+            strikes: 0,
+            maxStrikes: 3,
+            isExam: false,
+            stream: null
+        };
+
+        // --- 1. SYSTEM & UTILS ---
+        const getEl = (id) => document.getElementById(id);
+        
+        function switchView(toId) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            const target = getEl(toId);
+            target.style.display = 'flex';
+            setTimeout(() => target.classList.add('active'), 50);
+        }
+
+        // --- 2. AUTH FLOW ---
+        function handleLogin(e) {
+            e.preventDefault();
+            const n = getEl('inp-name').value.trim();
+            const c = getEl('inp-class').value.trim();
+            if(!n || !c) return;
+            
+            state.user = { name: n, class: c };
+            getEl('side-name').innerText = n;
+            getEl('side-class').innerText = c;
+            
+            switchView('view-prep');
+        }
+
+        // --- 3. PREPARATION (FILE & CAM) ---
+        let tempJson = null;
+
+        function handleFile(input) {
+            const f = input.files[0];
+            if(!f) return;
+            const r = new FileReader();
+            r.onload = e => processJson(e.target.result, f.name);
+            r.readAsText(f);
+        }
+
+        function toggleManual() {
+            getEl('manual-input').classList.toggle('hidden');
+        }
+
+        function handleManual() {
+            const t = getEl('txt-manual').value.trim();
+            if(t) processJson(t, "Manual Input");
+        }
+
+        function processJson(str, fname) {
+            tempJson = str;
+            getEl('lbl-filename').innerText = fname;
+            getEl('file-info').classList.remove('hidden');
+            getEl('upload-area').classList.add('hidden');
+            getEl('lock-overlay').classList.add('hidden'); // Unlock Camera section
+        }
+
+        async function reqCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, facingMode: 'user' } });
+                state.stream = stream;
+                
+                // Show preview
+                const vid = getEl('cam-preview');
+                vid.srcObject = stream;
+                vid.classList.remove('opacity-50');
+                
+                getEl('cam-btn-area').classList.add('hidden');
+                getEl('rec-dot').classList.remove('hidden');
+                
+                // Enable Start Button & Token
+                getEl('inp-token').disabled = false;
+                getEl('btn-start').disabled = false;
+
+            } catch(e) {
+                Swal.fire('Error', 'Izin kamera ditolak. Mohon izinkan untuk lanjut.', 'error');
+            }
+        }
+
+        function resetPrep() {
+            tempJson = null;
+            if(state.stream) state.stream.getTracks().forEach(t => t.stop());
+            getEl('file-info').classList.add('hidden');
+            getEl('upload-area').classList.remove('hidden');
+            getEl('lock-overlay').classList.remove('hidden');
+            getEl('cam-preview').srcObject = null;
+            getEl('cam-preview').classList.add('opacity-50');
+            getEl('cam-btn-area').classList.remove('hidden');
+            getEl('rec-dot').classList.add('hidden');
+            getEl('inp-token').disabled = true;
+            getEl('btn-start').disabled = true;
+            getEl('inp-file').value = '';
+        }
+
+        // --- 4. EXAM START ---
+        function startExam() {
+            const token = getEl('inp-token').value.trim();
+            if(!token) return Swal.fire('Info', 'Masukkan Token', 'warning');
+
+            try {
+                // Decrypt logic simply (AES standard)
+                let str = tempJson;
+                try {
+                    const dec = CryptoJS.AES.decrypt(str, token).toString(CryptoJS.enc.Utf8);
+                    if(dec) str = dec;
+                } catch(e){}
+
+                const data = JSON.parse(str);
+                if(!Array.isArray(data.questions)) throw new Error('Format Salah');
+
+                state.examData = data;
+                state.timeLeft = (data.duration || 60) * 60;
+                
+                // Move Camera Stream to Sidebar
+                const sideCam = getEl('sidebar-cam');
+                sideCam.srcObject = state.stream;
+
+                Security.start();
+                initExamUI();
+                switchView('view-exam');
+
+            } catch(e) {
+                Swal.fire('Gagal', 'Token Salah atau File Rusak', 'error');
+            }
+        }
+
+        // --- 5. EXAM UI LOGIC ---
+        function initExamUI() {
+            state.isExam = true;
+            renderGrid();
+            loadQ(0);
+            startTimer();
+            getEl('total-q-count')?.remove(); // Cleanup if needed
+        }
+
+        function renderGrid() {
+            const total = state.examData.questions.length;
+            const filled = Object.keys(state.answers).length;
+            getEl('answered-count').innerText = `${filled}/${total}`;
+
+            let html = '';
+            for(let i=0; i<total; i++) {
+                const isAns = state.answers[i] !== undefined;
+                const isCurr = i === state.currentIdx;
+                
+                let classes = 'grid-btn ';
+                if(isCurr) classes += 'active ';
+                else if(isAns) classes += 'answered ';
+                else classes += 'empty ';
+
+                html += `<button onclick="loadQ(${i})" class="${classes}">${i+1}</button>`;
+            }
+            getEl('question-grid').innerHTML = html;
+        }
+
+        function loadQ(idx) {
+            state.currentIdx = idx;
+            const q = state.examData.questions[idx];
+
+            getEl('q-num').innerText = idx + 1;
+            getEl('q-text').innerHTML = q.text;
+
+            const optBox = getEl('q-options');
+            optBox.innerHTML = '';
+            
+            q.options.forEach((opt, i) => {
+                const checked = state.answers[idx] === i ? 'checked' : '';
+                // Styling Option
+                const activeClass = state.answers[idx] === i ? 'border-black bg-gray-50' : 'border-gray-200';
+                
+                optBox.innerHTML += `
+                    <label class="flex items-center p-4 border rounded-xl cursor-pointer hover:bg-gray-50 transition-all group ${checked ? 'border-black bg-gray-50' : 'border-gray-200'}">
+                        <input type="radio" name="ans" class="hidden" onchange="answer(${idx}, ${i})" ${checked}>
+                        <div class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-xs font-bold mr-4 group-hover:border-black transition-colors ${checked ? 'bg-black text-white border-black' : 'text-gray-500'}">
+                            ${String.fromCharCode(65+i)}
+                        </div>
+                        <div class="font-sans text-sm md:text-base text-gray-800">${opt}</div>
+                    </label>
+                `;
+            });
+
+            // Nav Button State
+            getEl('btn-prev').disabled = idx === 0;
+            getEl('btn-prev').style.opacity = idx === 0 ? '0.3' : '1';
+            
+            if(idx === state.examData.questions.length -1) {
+                getEl('btn-next').innerHTML = 'Finish <i class="ph ph-check"></i>';
+                getEl('btn-next').onclick = confirmFinish;
+            } else {
+                getEl('btn-next').innerHTML = 'Next <i class="ph ph-arrow-right"></i>';
+                getEl('btn-next').onclick = () => navQ(1);
+            }
+
+            renderGrid();
+        }
+
+        function answer(qIdx, aIdx) {
+            state.answers[qIdx] = aIdx;
+            renderGrid();
+            // Optional: Auto Next
+            // if(qIdx < state.examData.questions.length-1) setTimeout(() => navQ(1), 300);
+        }
+
+        function navQ(step) {
+            const n = state.currentIdx + step;
+            if(n >= 0 && n < state.examData.questions.length) loadQ(n);
+        }
+
+        function toggleSidebar() {
+            const sb = getEl('sidebar');
+            const ov = getEl('sidebar-overlay');
+            const hidden = sb.classList.contains('-translate-x-full');
+            
+            if(hidden) {
+                sb.classList.remove('-translate-x-full');
+                ov.classList.remove('hidden');
+            } else {
+                sb.classList.add('-translate-x-full');
+                ov.classList.add('hidden');
+            }
+        }
+
+        function startTimer() {
+            state.timerId = setInterval(() => {
+                state.timeLeft--;
+                const m = Math.floor(state.timeLeft / 60).toString().padStart(2,'0');
+                const s = (state.timeLeft % 60).toString().padStart(2,'0');
+                getEl('timer-display').innerText = `${m}:${s}`;
+                getEl('timer-mobile').innerText = `${m}:${s}`;
+
+                if(state.timeLeft <= 0) finish(true);
+            }, 1000);
+        }
+
+        // --- 6. SECURITY LOGIC ---
+        const Security = {
+            start: function() {
+                document.addEventListener('contextmenu', e => e.preventDefault());
+                document.documentElement.requestFullscreen().catch(()=>{});
+                
+                window.onblur = () => this.strike('Keluar dari Jendela Ujian');
+                document.addEventListener('visibilitychange', () => {
+                    if(document.hidden) this.strike('Membuka Tab Lain');
                 });
-                container.innerHTML = html;
             },
+            strike: function(reason) {
+                if(!state.isExam) return;
+                state.strikes++;
+                
+                const s1 = getEl('strike-1');
+                const s2 = getEl('strike-2');
+                const s3 = getEl('strike-3');
+                
+                if(state.strikes >= 1) s1.className = "h-2 w-12 rounded bg-red-600";
+                if(state.strikes >= 2) s2.className = "h-2 w-12 rounded bg-red-600";
+                if(state.strikes >= 3) s3.className = "h-2 w-12 rounded bg-red-600";
 
-            renderPreview() {
-                document.getElementById('prev-podcast').innerText = this.data.podcast || "Untitled Podcast";
-                document.getElementById('prev-episode').innerText = this.data.episode || "Uncategorized";
+                getEl('violation-text').innerText = reason;
+                getEl('violation-overlay').classList.remove('hidden');
+                getEl('violation-overlay').classList.add('flex');
 
-                const container = document.getElementById('preview-content');
-                let html = '';
-
-                this.data.items.forEach((item, idx) => {
-                    // Stagger animation
-                    const delay = idx * 0.2; 
-                    html += `
-                    <div class="conversation-block" style="animation-delay: ${delay}s">
-                        <div class="q-block">${item.q}</div>
-                        <div class="a-block">${item.a}</div>
-                    </div>`;
-                });
-                container.innerHTML = html;
+                if(state.strikes > state.maxStrikes) {
+                    getEl('btn-resume').innerText = "DISKUALIFIKASI - Submit Jawaban";
+                    getEl('btn-resume').onclick = () => finish(true);
+                    getEl('btn-resume').className = "w-full py-3 bg-red-600 text-white text-xs font-bold uppercase rounded-lg hover:bg-red-700";
+                }
+            },
+            resume: function() {
+                if(state.strikes <= state.maxStrikes) {
+                    document.documentElement.requestFullscreen().catch(()=>{});
+                    getEl('violation-overlay').classList.add('hidden');
+                    getEl('violation-overlay').classList.remove('flex');
+                }
             }
         };
 
-        // Start
-        app.init();
+        // --- 7. FINISH ---
+        function confirmFinish() {
+            const blank = state.examData.questions.length - Object.keys(state.answers).length;
+            Swal.fire({
+                title: 'Selesai Ujian?',
+                text: blank > 0 ? `${blank} soal belum dijawab.` : 'Pastikan jawaban sudah benar.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#000',
+                confirmButtonText: 'Kirim Jawaban'
+            }).then(r => { if(r.isConfirmed) finish(false) });
+        }
+
+        function finish(dq) {
+            clearInterval(state.timerId);
+            state.isExam = false;
+            document.exitFullscreen().catch(()=>{});
+            
+            // Stop Cam
+            if(state.stream) state.stream.getTracks().forEach(t=>t.stop());
+
+            // Calc
+            let score = 0;
+            state.examData.questions.forEach((q,i) => {
+                if(state.answers[i] === q.key) score++;
+            });
+            const finalScore = Math.round((score / state.examData.questions.length)*100);
+
+            // Encrypt
+            const payload = {
+                u: state.user, s: finalScore, ans: state.answers, dq: dq, t: new Date()
+            };
+            const enc = CryptoJS.AES.encrypt(JSON.stringify(payload), "RESULT").toString();
+            const blob = new Blob([enc], {type:'text/plain'});
+            const url = URL.createObjectURL(blob);
+            const fname = `RES_${state.user.class}_${state.user.name.replace(/ /g,'_')}.enc`;
+
+            // Render Result Page
+            document.body.innerHTML = `
+                <div class="h-screen w-screen flex flex-col items-center justify-center bg-white p-6 text-center animate-fade-in">
+                    <div class="w-20 h-20 bg-black text-white rounded-full flex items-center justify-center text-4xl mb-6">
+                        <i class="ph ph-check"></i>
+                    </div>
+                    <h1 class="font-serif text-4xl font-bold mb-2">Ujian Selesai.</h1>
+                    <p class="text-gray-500 mb-8">${dq ? 'Sesi dihentikan sistem.' : 'Terima kasih telah berpartisipasi.'}</p>
+                    <a href="${url}" download="${fname}" class="bg-black text-white px-8 py-3 rounded-lg text-sm font-bold uppercase tracking-widest hover:bg-gray-800 transition-all flex items-center gap-2">
+                        <i class="ph ph-download-simple"></i> Simpan Hasil
+                    </a>
+                    <button onclick="location.reload()" class="mt-8 text-gray-400 text-xs hover:text-black">KEMBALI KE HALAMAN UTAMA</button>
+                </div>
+            `;
+        }
     </script>
 </body>
 </html>
